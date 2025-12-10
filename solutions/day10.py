@@ -93,6 +93,54 @@ def answer_1(input: list):
 #     return None
 
 
+# def recursion(current_index, sorted_buttons, left_over_goal, current_count, buttons):
+#     if current_index >= len(sorted_buttons):
+#         if all([c == 0 for c in left_over_goal]):
+#             return current_count
+#         elif any([c < 0 for c in left_over_goal]):
+#             return None
+#         else:
+#             return None
+#     # Get button info
+#     button = sorted_buttons[current_index]
+#     button_index = buttons.index(button)
+    
+#     # Goal counters that this button affects
+    # goal_counters_button = []
+    # for c in button:
+    #     goal_counters_button.append(left_over_goal[c])
+    
+#     # Max increase is the min of affected counters
+#     max_increase = min(goal_counters_button)
+#     for increase in range(max_increase, -1, -1):
+#         results = []
+#         for c in button:
+#             new_current_count = copy.deepcopy(current_count)
+#             new_left_over_goal = copy.deepcopy(left_over_goal)
+#             new_current_count[button_index] += increase
+#             new_left_over_goal[c] -= increase
+#             result_recursion = recursion(current_index+1, sorted_buttons, new_left_over_goal, new_current_count, buttons)
+#             if result_recursion is not None:
+#                 results.append(result_recursion)
+#         if results:
+#             # Return min count from results
+#             min_count = None
+#             for r in results:
+#                 total_count = sum(r)
+#                 if min_count is None or total_count < sum(min_count):
+#                     min_count = r
+#             return min_count
+#     return None
+        # print("LEFT OVER GOAL", button, increase, left_over_goal)
+
+
+def convert_counts_to_counters(counts, buttons, goal_length):
+    converted_counters = [0] * goal_length
+    for button_index, count in enumerate(counts):
+        button = buttons[button_index]
+        for c in button:
+            converted_counters[c] += count
+    return converted_counters
 
 def answer_2(input: list):
     answer = 0  
@@ -113,47 +161,114 @@ def answer_2(input: list):
        
         # goal = int("".join([str(i) for i in joltage]))
         goal = joltage
+        
+        sorted_buttons = sorted(
+            copy.deepcopy(buttons), 
+            key=lambda x: len(x),
+            reverse=True
+        )
+        
+        # count = recursion(0, sorted_buttons, goal, [0]*len(buttons), buttons)
+        #         (3) (1,3) (2) (2,3) (0,2) (0,1)
+        # Answer: [1,   3 ,    0,  3,   2,    1]
 
+        # counter_button_map = {}
+        # for button in sorted_buttons:
+        #     button_index = buttons.index(button)
+        #     # goal_counters_button = []
+        #     for c in button:
+        #         # goal_counters_button.append(goal[c])
+        #         counter_button_map[c] = button_index
         
-        possible_coins = copy.deepcopy(buttons)
-        possible_coins.sort()
+        # counts = {}
+        # for button in sorted_buttons:
+        #     button_index = buttons.index(button)
+        possible_counter_configs = []
+        for counter_index, max_counter in enumerate(goal):
+            counter_config = []
+            for c in range(0, max_counter+1):
+                base_counter = [0] * len(goal)
+                base_counter[counter_index] = c
+                counter_config.append(base_counter)
+            possible_counter_configs.append(counter_config)
+        possible_counter_configs = list(itertools.product(*possible_counter_configs))
+        cleaned_configs = []
+        for config in possible_counter_configs:
+            cleaned_config = [0] * len(goal)
+            for counter_index in range(len(goal)):
+                cleaned_config[counter_index] = config[counter_index][counter_index]
+            cleaned_configs.append(tuple(cleaned_config))
         counts = {}
-        for c in possible_coins:
-            for v in range(c, goal+1):
-                # v was not yet determined
-                existing_counts = counts.get(v, None)
-                if existing_counts is None:
-                    existing_counts = [0] * len(converted_buttons)
-                    
-                previous_possible_combo = v - c
-                previous_count = counts.get(previous_possible_combo, None)
-                if previous_count is None:
-                    previous_count = [0] * len(converted_buttons)
-                if sum(existing_counts) == 0 and sum(previous_count) == 0:
-                    if v % c == 0:
-                        new_count = [0] * len(converted_buttons)
-                        new_count[coin_index] += 1
-                        counts[v] = new_count
-                elif sum(existing_counts) == 0 and sum(previous_count) != 0:
-                    new_count = copy.deepcopy(previous_count)
-                    new_count[coin_index] += 1
-                    counts[v] = new_count
-                elif sum(existing_counts) != 0:
-                    if sum(previous_count) != 0:
-                        if sum(previous_count) +1 < sum(existing_counts): 
-                            new_count = copy.deepcopy(previous_count)
-                            new_count[coin_index] += 1
-                            counts[v] = new_count
-                        else:
-                            new_count = copy.deepcopy(existing_counts)
-                            counts[v] = new_count
-                    else:
-                        new_count = copy.deepcopy(existing_counts)
-                        counts[v] = new_count
-        print(converted_buttons)
-        min_count = counts[goal]
-        print(sum(min_count), min_count)
         
+        # cleaned_configs = [
+        #     # tuple([0,0,0,1]),
+        #     tuple([0,1,0,1]),
+        #     tuple([1,0,1,0]),
+        #     # tuple([0,0,2,0]),
+        #     # tuple([0,0,1,1]),
+        #     # tuple([1,0,1,0]),
+        #     # tuple([1,1,0,0]),
+        #     # tuple([1,1,0,1]),
+        #     tuple([1,1,1,1]),
+        #     tuple([1,2,1,2]),
+        # ]
+        for config in cleaned_configs:
+            for b in sorted_buttons:
+                button_index = buttons.index(b)
+                for c in b:
+                    if config[c] > 0:
+                        break
+                # Skip configs that the button cannot impact
+                else:
+                    continue
+                
+                # v was not yet determined
+                existing_count = counts.get(config, None)
+                if existing_count is None:
+                    existing_count = [0] * len(buttons)
+                
+                
+                previous_possible_config = copy.deepcopy(list(config))
+                for c in b:
+                    previous_possible_config[c] -= 1
+                previous_possible_config = tuple(previous_possible_config)
+                previous_count = counts.get(previous_possible_config, None)
+
+                if previous_count is None:
+                    previous_count = [0] * len(buttons)
+
+                sum_existing_count = sum(existing_count)
+                sum_previous_count = sum(previous_count)
+                if sum_previous_count == 0 and sum_existing_count == 0:
+                    if any([previous_possible_config[i] != 0 for i in range(len(previous_possible_config))]):
+                        # Invalid previous combo
+                        continue
+                    new_count = [0] * len(buttons)
+                    new_count[button_index] = 1
+                    counts[config] = new_count
+                elif sum_previous_count > 0 and sum_existing_count == 0:
+                    new_count = copy.deepcopy(previous_count)
+                    new_count[button_index] += 1
+                    counts[config] = new_count
+                elif sum_previous_count > 0 and sum_existing_count > 0:
+                    if sum_previous_count + 1 < sum_existing_count:
+                        # Verify that updating the count matches the config
+                        new_count = copy.deepcopy(previous_count)
+                        new_count[button_index] += 1
+                        test_config = convert_counts_to_counters(new_count, buttons, len(goal))
+                        if test_config == config:
+                            counts[config] = new_count
+                   
+        print(sum(counts[tuple(goal)]))
+        answer += sum(counts[tuple(goal)])
+        # check_counter = [0] * len(goal)
+        # for index, counter in enumerate(counts[tuple(goal)]):
+        #     print(index, c)
+        #     button = buttons[index]
+        #     for c in button:
+        #         check_counter[c] += counter
+        # print(check_counter)            
+                
         # answer += sum(min_count)
     print("Answer 2", answer)
 
