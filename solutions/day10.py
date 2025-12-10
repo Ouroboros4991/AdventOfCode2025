@@ -68,37 +68,37 @@ def answer_1(input: list):
     print("Answer 1", answer)
 
 
-def min_coin_recursion(goal, coins, count):
-    if goal == 0:
-        return count
-    if goal < 0:
-        return None
+# def min_coin_recursion(goal, coins, count, original_coins):
+#     if goal == 0:
+#         return count
+#     if goal < 0:
+#         return None
     
-    # Find biggest coin that is smaller than the remaining goal:
-    possible_coins = []
-    for coin in coins:
-        if coin < goal:
-            possible_coins.append(coin)
-    
-    while possible_coins:
-        max_coin = max(possible_coins)
-        coin_index = coins.index(max_coin)
-        new_count = copy.deepcopy(count)
-        new_count[coin_index] += 1
-        new_goal = goal - max_coin
-        final_count = min_coin_recursion(new_goal, coins, new_count)
-        if final_count is not None:
-            return final_count
-        else:
-            possible_coins.remove(max_coin)
-    return None
-    
+#     # Find biggest coin that is smaller than the remaining goal:
+    # possible_coins = copy.deepcopy(coins)
+    # possible_coins.sort(reverse=True)
+#     for max_coin in possible_coins:
+#         # max_coin = max(possible_coins)
+#         coin_index = original_coins.index(max_coin)        
+#         max_included = goal // max_coin
+#         for coin_count in range(max_included, -1, -1):
+#             new_count = copy.deepcopy(count)
+#             new_count[coin_index] += coin_count
+#             new_goal = goal - (coin_count * max_coin)
+#             left_over_coins = copy.deepcopy(coins)
+#             left_over_coins.remove(max_coin)
+#             final_count = min_coin_recursion(new_goal, left_over_coins, new_count, original_coins)
+#             if final_count is not None:
+#                 return final_count
+#     return None
+
+
 
 def answer_2(input: list):
     answer = 0  
     answer = 0
     for index, line in enumerate(input):
-        print("Processing line", index)
+        print("Processing line", index, line)
         lights = ""
         buttons = []
         joltage = []
@@ -111,19 +111,50 @@ def answer_2(input: list):
             elif chunk.strip()[0] == "{":
                 joltage = [int(j) for j in chunk.replace("{", "").replace("}", "").split(",")]
        
-        goal = int("".join([str(i) for i in joltage]))
-        
-        converted_buttons = []
-        for button in buttons:
-            button_value = 0
-            for i, b in enumerate(button):
-                button_value += 10**b
-            converted_buttons.append(button_value)
+        # goal = int("".join([str(i) for i in joltage]))
+        goal = joltage
 
-        total_count = min_coin_recursion(goal=goal, coins=converted_buttons, count=[0]*len(converted_buttons))
-        print(total_count)
-        answer += sum(total_count)
-        break
+        
+        possible_coins = copy.deepcopy(buttons)
+        possible_coins.sort()
+        counts = {}
+        for c in possible_coins:
+            for v in range(c, goal+1):
+                # v was not yet determined
+                existing_counts = counts.get(v, None)
+                if existing_counts is None:
+                    existing_counts = [0] * len(converted_buttons)
+                    
+                previous_possible_combo = v - c
+                previous_count = counts.get(previous_possible_combo, None)
+                if previous_count is None:
+                    previous_count = [0] * len(converted_buttons)
+                if sum(existing_counts) == 0 and sum(previous_count) == 0:
+                    if v % c == 0:
+                        new_count = [0] * len(converted_buttons)
+                        new_count[coin_index] += 1
+                        counts[v] = new_count
+                elif sum(existing_counts) == 0 and sum(previous_count) != 0:
+                    new_count = copy.deepcopy(previous_count)
+                    new_count[coin_index] += 1
+                    counts[v] = new_count
+                elif sum(existing_counts) != 0:
+                    if sum(previous_count) != 0:
+                        if sum(previous_count) +1 < sum(existing_counts): 
+                            new_count = copy.deepcopy(previous_count)
+                            new_count[coin_index] += 1
+                            counts[v] = new_count
+                        else:
+                            new_count = copy.deepcopy(existing_counts)
+                            counts[v] = new_count
+                    else:
+                        new_count = copy.deepcopy(existing_counts)
+                        counts[v] = new_count
+        print(converted_buttons)
+        min_count = counts[goal]
+        print(sum(min_count), min_count)
+        
+        # answer += sum(min_count)
     print("Answer 2", answer)
 
 if __name__ == "__main__":
